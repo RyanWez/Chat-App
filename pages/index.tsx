@@ -15,6 +15,7 @@ export default function Home() {
     activeChatId,
     activeChat,
     isLoading,
+    streamingMessageId,
     setActiveChatId,
     sendMessage,
     createNewChat
@@ -57,6 +58,7 @@ export default function Home() {
           <ChatMessages 
             messages={activeChat?.messages || []} 
             isLoading={isLoading}
+            streamingMessageId={streamingMessageId}
             onSuggestionClick={sendMessage}
           />
 

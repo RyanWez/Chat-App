@@ -1,179 +1,180 @@
-import { useState } from 'react'
-import { ChatSession, Message } from '@/types/chat'
+import { useState } from "react";
+import { ChatSession, Message } from "@/types/chat";
 
 export const useChat = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([
     {
-      id: '1',
-      title: 'Welcome Chat',
+      id: "1",
+      title: "Welcome Chat",
       messages: [],
-      lastUpdated: new Date()
-    }
-  ])
-  const [activeChatId, setActiveChatId] = useState('1')
-  const [isLoading, setIsLoading] = useState(false)
+      lastUpdated: new Date(),
+    },
+  ]);
+  const [activeChatId, setActiveChatId] = useState("1");
+  const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null
+  );
 
-  const activeChat = chatSessions.find(chat => chat.id === activeChatId)
+  const activeChat = chatSessions.find((chat) => chat.id === activeChatId);
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !activeChat || isLoading) return
+    if (!content.trim() || !activeChat || isLoading) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       content: content.trim(),
-      role: 'user',
-      timestamp: new Date()
-    }
+      role: "user",
+      timestamp: new Date(),
+    };
 
     // Add user message
-    const updatedSessions = chatSessions.map(session => {
+    const updatedSessions = chatSessions.map((session) => {
       if (session.id === activeChatId) {
         return {
           ...session,
           messages: [...session.messages, newMessage],
-          lastUpdated: new Date()
-        }
+          lastUpdated: new Date(),
+        };
       }
-      return session
-    })
+      return session;
+    });
 
-    setChatSessions(updatedSessions)
-    setIsLoading(true)
+    setChatSessions(updatedSessions);
+    setIsLoading(true);
 
-    // Create placeholder for streaming response
-    const assistantMessageId = (Date.now() + 1).toString()
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      content: '',
-      role: 'assistant',
-      timestamp: new Date()
-    }
-
-    // Add empty assistant message
-    setChatSessions(prev => prev.map(session => {
-      if (session.id === activeChatId) {
-        return {
-          ...session,
-          messages: [...session.messages, assistantMessage],
-          lastUpdated: new Date()
-        }
-      }
-      return session
-    }))
+    const assistantMessageId = (Date.now() + 1).toString();
 
     try {
       // Prepare messages for API
-      const apiMessages = updatedSessions
-        .find(s => s.id === activeChatId)
-        ?.messages.map(m => ({
-          role: m.role,
-          content: m.content
-        })) || []
+      const apiMessages =
+        updatedSessions
+          .find((s) => s.id === activeChatId)
+          ?.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })) || [];
 
-      // Call streaming API
-      const response = await fetch('/api/chat-stream', {
-        method: 'POST',
+      // Use regular API (not streaming)
+      const response = await fetch("/api/chat", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ messages: apiMessages })
-      })
+        body: JSON.stringify({ messages: apiMessages }),
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from AI')
+        throw new Error("Failed to get response from AI");
       }
 
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
+      const data = await response.json();
+      setIsLoading(false);
 
-      if (!reader) {
-        throw new Error('No response body')
-      }
+      // Add empty message first
+      const emptyMessage: Message = {
+        id: assistantMessageId,
+        content: "",
+        role: "assistant",
+        timestamp: new Date(),
+      };
 
-      let accumulatedContent = ''
+      setChatSessions((prev) =>
+        prev.map((session) => {
+          if (session.id === activeChatId) {
+            return {
+              ...session,
+              messages: [...session.messages, emptyMessage],
+              lastUpdated: new Date(),
+            };
+          }
+          return session;
+        })
+      );
 
-      while (true) {
-        const { done, value } = await reader.read()
-        
-        if (done) break
+      setStreamingMessageId(assistantMessageId);
 
-        const chunk = decoder.decode(value)
-        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+      // Simulate typing effect
+      const fullText = data.content;
+      const chunkSize = 5; // characters per update
+      let currentIndex = 0;
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6)
-            if (data === '[DONE]') continue
+      const typeInterval = setInterval(() => {
+        currentIndex += chunkSize;
+        const currentText = fullText.slice(
+          0,
+          Math.min(currentIndex, fullText.length)
+        );
 
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.content) {
-                accumulatedContent += parsed.content
-                
-                // Update message content
-                setChatSessions(prev => prev.map(session => {
-                  if (session.id === activeChatId) {
-                    return {
-                      ...session,
-                      messages: session.messages.map(msg =>
-                        msg.id === assistantMessageId
-                          ? { ...msg, content: accumulatedContent }
-                          : msg
-                      ),
-                      lastUpdated: new Date()
-                    }
-                  }
-                  return session
-                }))
-              }
-            } catch (e) {
-              console.error('Error parsing chunk:', e)
+        setChatSessions((prev) =>
+          prev.map((session) => {
+            if (session.id === activeChatId) {
+              return {
+                ...session,
+                messages: session.messages.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: currentText }
+                    : msg
+                ),
+                lastUpdated: new Date(),
+              };
             }
-          }
+            return session;
+          })
+        );
+
+        if (currentIndex >= fullText.length) {
+          clearInterval(typeInterval);
+          setStreamingMessageId(null);
         }
-      }
+      }, 20); // 20ms per chunk = smooth animation
     } catch (error) {
-      console.error('Error sending message:', error)
-      
-      // Update with error message
-      setChatSessions(prev => prev.map(session => {
-        if (session.id === activeChatId) {
-          return {
-            ...session,
-            messages: session.messages.map(msg =>
-              msg.id === assistantMessageId
-                ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
-                : msg
-            ),
-            lastUpdated: new Date()
+      console.error("Error sending message:", error);
+      setIsLoading(false);
+
+      // Show error message
+      const errorMessage: Message = {
+        id: assistantMessageId,
+        content: "Sorry, I encountered an error. Please try again.",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      setChatSessions((prev) =>
+        prev.map((session) => {
+          if (session.id === activeChatId) {
+            return {
+              ...session,
+              messages: [...session.messages, errorMessage],
+              lastUpdated: new Date(),
+            };
           }
-        }
-        return session
-      }))
-    } finally {
-      setIsLoading(false)
+          return session;
+        })
+      );
     }
-  }
+  };
 
   const createNewChat = () => {
     const newChat: ChatSession = {
       id: Date.now().toString(),
       title: `Chat ${chatSessions.length + 1}`,
       messages: [],
-      lastUpdated: new Date()
-    }
+      lastUpdated: new Date(),
+    };
 
-    setChatSessions(prev => [newChat, ...prev])
-    setActiveChatId(newChat.id)
-  }
+    setChatSessions((prev) => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+  };
 
   return {
     chatSessions,
     activeChatId,
     activeChat,
     isLoading,
+    streamingMessageId,
     setActiveChatId,
     sendMessage,
-    createNewChat
-  }
-}
+    createNewChat,
+  };
+};

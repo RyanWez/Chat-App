@@ -1,21 +1,22 @@
 import { useRef, useEffect } from 'react'
 import { Message } from '@/types/chat'
 import { ChatMessage } from './ChatMessage'
-import { LoadingDots } from './LoadingDots'
+import { ThinkingIndicator } from './ThinkingIndicator'
 import { EmptyState } from './EmptyState'
 
 interface ChatMessagesProps {
   messages: Message[]
   isLoading?: boolean
+  streamingMessageId?: string | null
   onSuggestionClick?: (suggestion: string) => void
 }
 
-export const ChatMessages = ({ messages, isLoading, onSuggestionClick }: ChatMessagesProps) => {
+export const ChatMessages = ({ messages, isLoading, streamingMessageId, onSuggestionClick }: ChatMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isLoading])
+  }, [messages, isLoading, streamingMessageId])
 
   if (messages.length === 0 && !isLoading) {
     return <EmptyState onSuggestionClick={onSuggestionClick || (() => {})} />
@@ -23,21 +24,14 @@ export const ChatMessages = ({ messages, isLoading, onSuggestionClick }: ChatMes
 
   return (
     <div className="chat-messages">
-      {messages.map((message, index) => (
+      {messages.map((message) => (
         <ChatMessage 
           key={message.id} 
           message={message}
-          isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
+          isStreaming={message.id === streamingMessageId}
         />
       ))}
-      {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-        <div className="message assistant">
-          <div className="message-avatar">AI</div>
-          <div className="message-content loading">
-            <LoadingDots />
-          </div>
-        </div>
-      )}
+      {isLoading && <ThinkingIndicator />}
       <div ref={messagesEndRef} />
     </div>
   )
