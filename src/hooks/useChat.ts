@@ -6,23 +6,17 @@ export const useChat = () => {
     {
       id: '1',
       title: 'Welcome Chat',
-      messages: [
-        {
-          id: '1',
-          content: 'Hello! How can I help you today?',
-          role: 'assistant',
-          timestamp: new Date()
-        }
-      ],
+      messages: [],
       lastUpdated: new Date()
     }
   ])
   const [activeChatId, setActiveChatId] = useState('1')
+  const [isLoading, setIsLoading] = useState(false)
 
   const activeChat = chatSessions.find(chat => chat.id === activeChatId)
 
   const sendMessage = (content: string) => {
-    if (!content.trim() || !activeChat) return
+    if (!content.trim() || !activeChat || isLoading) return
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -44,8 +38,9 @@ export const useChat = () => {
     })
 
     setChatSessions(updatedSessions)
+    setIsLoading(true)
 
-    // Simulate assistant response
+    // Simulate assistant response with realistic delay
     setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -64,7 +59,8 @@ export const useChat = () => {
         }
         return session
       }))
-    }, 1000)
+      setIsLoading(false)
+    }, 1500)
   }
 
   const createNewChat = () => {
@@ -83,6 +79,7 @@ export const useChat = () => {
     chatSessions,
     activeChatId,
     activeChat,
+    isLoading,
     setActiveChatId,
     sendMessage,
     createNewChat

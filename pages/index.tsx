@@ -14,6 +14,7 @@ export default function Home() {
     chatSessions,
     activeChatId,
     activeChat,
+    isLoading,
     setActiveChatId,
     sendMessage,
     createNewChat
@@ -53,7 +54,11 @@ export default function Home() {
             onToggleTheme={toggleTheme}
           />
 
-          <ChatMessages messages={activeChat?.messages || []} />
+          <ChatMessages 
+            messages={activeChat?.messages || []} 
+            isLoading={isLoading}
+            onSuggestionClick={sendMessage}
+          />
 
           <MessageInput onSendMessage={sendMessage} />
         </div>

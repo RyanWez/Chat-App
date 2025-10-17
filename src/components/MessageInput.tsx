@@ -1,4 +1,4 @@
-import { useState, useRef, KeyboardEvent } from 'react'
+import { useState, useRef, KeyboardEvent, useEffect } from 'react'
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void
@@ -8,10 +8,24 @@ export const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   const [currentMessage, setCurrentMessage] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`
+    }
+  }, [currentMessage])
+
   const handleSendMessage = () => {
     if (!currentMessage.trim()) return
     onSendMessage(currentMessage)
     setCurrentMessage('')
+    
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+    }
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
