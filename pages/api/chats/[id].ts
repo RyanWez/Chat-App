@@ -12,6 +12,11 @@ export default async function handler(
     return res.status(400).json({ error: 'Invalid chat ID' })
   }
 
+  // Validate ObjectId format
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid ObjectId format' })
+  }
+
   try {
     const db = await getDatabase()
     const chatsCollection = db.collection('chats')
@@ -30,6 +35,27 @@ export default async function handler(
     if (req.method === 'PUT') {
       // Update chat
       const { title, messages } = req.body
+
+      // Validate input
+      if (title !== undefined && typeof title !== 'string') {
+        return res.status(400).json({ error: 'Invalid title format' })
+      }
+
+      if (messages !== undefined && !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Invalid messages format' })
+      }
+
+      // Validate messages structure
+      if (messages && messages.length > 0) {
+        for (const msg of messages) {
+          if (!msg.role || !msg.content || typeof msg.content !== 'string') {
+            return res.status(400).json({ error: 'Invalid message structure' })
+          }
+          if (!['user', 'assistant', 'system'].includes(msg.role)) {
+            return res.status(400).json({ error: 'Invalid message role' })
+          }
+        }
+      }
 
       const updateData: Record<string, unknown> = {
         lastUpdated: new Date()

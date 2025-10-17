@@ -15,30 +15,35 @@ export const useChat = () => {
     const initChats = async () => {
       try {
         const response = await fetch("/api/chats");
-        if (response.ok) {
-          const chats = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load chats: ${response.status}`);
+        }
+        
+        const chats = await response.json();
+        
+        if (chats.length > 0) {
+          // Convert MongoDB _id to id
+          const formattedChats = chats.map((chat: { _id: string; lastUpdated: string; messages: Array<{ timestamp: string }> }) => ({
+            ...chat,
+            id: chat._id,
+            lastUpdated: new Date(chat.lastUpdated),
+            messages: chat.messages.map((msg) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+          }));
           
-          if (chats.length > 0) {
-            // Convert MongoDB _id to id
-            const formattedChats = chats.map((chat: { _id: string; lastUpdated: string; messages: Array<{ timestamp: string }> }) => ({
-              ...chat,
-              id: chat._id,
-              lastUpdated: new Date(chat.lastUpdated),
-              messages: chat.messages.map((msg) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp)
-              }))
-            }));
-            
-            setChatSessions(formattedChats);
-            setActiveChatId(formattedChats[0].id);
-          } else {
-            // Create initial chat if none exist
-            await createNewChat();
-          }
+          setChatSessions(formattedChats);
+          setActiveChatId(formattedChats[0].id);
+        } else {
+          // Create initial chat if none exist
+          await createNewChat();
         }
       } catch (error) {
         console.error("Error loading chats:", error);
+        // Show user-friendly error
+        alert("Failed to load chat history. Starting with a new chat.");
         // Fallback: create new chat
         await createNewChat();
       } finally {
@@ -54,7 +59,7 @@ export const useChat = () => {
     try {
       if (chat._id) {
         // Update existing chat
-        await fetch(`/api/chats/${chat._id}`, {
+        const response = await fetch(`/api/chats/${chat._id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -62,6 +67,10 @@ export const useChat = () => {
             messages: chat.messages
           })
         });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to update chat: ${response.status}`);
+        }
       } else {
         // Create new chat
         const response = await fetch("/api/chats", {
@@ -73,16 +82,20 @@ export const useChat = () => {
           })
         });
         
-        if (response.ok) {
-          const savedChat = await response.json();
-          // Update local state with MongoDB _id
-          setChatSessions(prev => prev.map(s => 
-            s.id === chat.id ? { ...s, _id: savedChat._id } : s
-          ));
+        if (!response.ok) {
+          throw new Error(`Failed to create chat: ${response.status}`);
         }
+        
+        const savedChat = await response.json();
+        // Update local state with MongoDB _id
+        setChatSessions(prev => prev.map(s => 
+          s.id === chat.id ? { ...s, _id: savedChat._id } : s
+        ));
       }
     } catch (error) {
       console.error("Error saving chat:", error);
+      // Show user notification
+      alert("Failed to save chat. Your messages may not be persisted.");
     }
   };
 
@@ -377,10 +390,14 @@ export const useChat = () => {
         }, 20);
       } catch (fallbackError) {
         console.error("Fallback error:", fallbackError);
+        
+        const errorMsg = fallbackError instanceof Error 
+          ? fallbackError.message 
+          : "Unknown error occurred";
 
         const errorMessage: Message = {
           id: assistantMessageId,
-          content: "Sorry, I encountered an error. Please try again.",
+          content: `Sorry, I encountered an error: ${errorMsg}. Please check your connection and try again.`,
           role: "assistant",
           timestamp: new Date(),
         };
@@ -397,6 +414,9 @@ export const useChat = () => {
             return session;
           })
         );
+        
+        // Show user notification
+        alert(`AI Error: ${errorMsg}`);
       }
     }
   };
@@ -444,11 +464,17 @@ export const useChat = () => {
     // Delete from database
     if (chatToDelete?._id) {
       try {
-        await fetch(`/api/chats/${chatToDelete._id}`, {
+        const response = await fetch(`/api/chats/${chatToDelete._id}`, {
           method: "DELETE"
         });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to delete chat: ${response.status}`);
+        }
       } catch (error) {
         console.error("Error deleting chat:", error);
+        alert("Failed to delete chat from database.");
+        return; // Don't delete from UI if DB delete failed
       }
     }
 

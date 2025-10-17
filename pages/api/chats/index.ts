@@ -23,6 +23,27 @@ export default async function handler(
       // Create new chat
       const { title, messages } = req.body
 
+      // Validate input
+      if (title && typeof title !== 'string') {
+        return res.status(400).json({ error: 'Invalid title format' })
+      }
+
+      if (messages && !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Invalid messages format' })
+      }
+
+      // Validate messages structure
+      if (messages && messages.length > 0) {
+        for (const msg of messages) {
+          if (!msg.role || !msg.content || typeof msg.content !== 'string') {
+            return res.status(400).json({ error: 'Invalid message structure' })
+          }
+          if (!['user', 'assistant', 'system'].includes(msg.role)) {
+            return res.status(400).json({ error: 'Invalid message role' })
+          }
+        }
+      }
+
       const newChat = {
         title: title || 'New Chat',
         messages: messages || [],

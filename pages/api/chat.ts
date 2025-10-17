@@ -9,10 +9,17 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  // Validate environment variables
   const apiKey = process.env.OLLAMA_API_KEY
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'OLLAMA_API_KEY not configured' })
+    console.error('OLLAMA_API_KEY is not configured')
+    return res.status(500).json({ error: 'Server configuration error: API key missing' })
+  }
+
+  if (!process.env.MONGODB_URI) {
+    console.error('MONGODB_URI is not configured')
+    return res.status(500).json({ error: 'Server configuration error: Database URI missing' })
   }
 
   try {
