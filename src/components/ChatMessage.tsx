@@ -65,7 +65,10 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
             
             // Paragraphs
-            p: ({ children }) => <p className="markdown-p">{children}</p>
+            p: ({ children }) => <p className="markdown-p">{children}</p>,
+            
+            // Line breaks
+            br: () => <br />
           }}
         >
           {message.content}
