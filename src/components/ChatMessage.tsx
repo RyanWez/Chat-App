@@ -28,18 +28,23 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             em: ({ children }) => <em className="markdown-italic">{children}</em>,
             
             // Code
-            code: ({ inline, children, ...props }: any) => {
+            code: ({ inline, children, className, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '')
               return inline ? (
                 <code className="markdown-inline-code" {...props}>
                   {children}
                 </code>
               ) : (
-                <code className="markdown-code-block" {...props}>
+                <code className={`markdown-code-block ${className || ''}`} {...props}>
                   {children}
                 </code>
               )
             },
-            pre: ({ children }) => <pre className="markdown-pre">{children}</pre>,
+            pre: ({ children }) => (
+              <pre className="markdown-pre">
+                {children}
+              </pre>
+            ),
             
             // Lists
             ul: ({ children }) => <ul className="markdown-ul">{children}</ul>,
@@ -48,13 +53,23 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             
             // Links
             a: ({ children, href }) => (
-              <a className="markdown-link" href={href} target="_blank" rel="noopener noreferrer">
+              <a 
+                className="markdown-link" 
+                href={href} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ wordBreak: 'break-all' }}
+              >
                 {children}
               </a>
             ),
             
             // Tables
-            table: ({ children }) => <table className="markdown-table">{children}</table>,
+            table: ({ children }) => (
+              <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <table className="markdown-table">{children}</table>
+              </div>
+            ),
             thead: ({ children }) => <thead className="markdown-thead">{children}</thead>,
             tbody: ({ children }) => <tbody className="markdown-tbody">{children}</tbody>,
             tr: ({ children }) => <tr className="markdown-tr">{children}</tr>,
@@ -62,7 +77,9 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             td: ({ children }) => <td className="markdown-td">{children}</td>,
             
             // Blockquote
-            blockquote: ({ children }) => <blockquote className="markdown-blockquote">{children}</blockquote>,
+            blockquote: ({ children }) => (
+              <blockquote className="markdown-blockquote">{children}</blockquote>
+            ),
             
             // Paragraphs
             p: ({ children }) => <p className="markdown-p">{children}</p>,

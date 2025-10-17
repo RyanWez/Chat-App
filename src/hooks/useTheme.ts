@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 
 export const useTheme = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
     if (isDarkMode) {
-      document.documentElement.setAttribute('data-theme', 'dark')
+      document.documentElement.setAttribute("data-theme", "dark");
     } else {
-      document.documentElement.removeAttribute('data-theme')
+      document.documentElement.removeAttribute("data-theme");
     }
-  }, [isDarkMode])
+  }, [isDarkMode]);
 
-  const toggleTheme = () => setIsDarkMode(prev => !prev)
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   return {
     isDarkMode,
-    toggleTheme
-  }
-}
+    toggleTheme,
+  };
+};
