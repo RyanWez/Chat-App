@@ -1,0 +1,29 @@
+/* ============================================
+   CSS Variables & Theme Colors
+   ============================================ */
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f7f8;
+  --bg-tertiary: #ececf1;
+  --text-primary: #343541;
+  --text-secondary: #565869;
+  --border-color: #e5e5e6;
+  --accent-color: #10a37f;
+  --hover-color: #f5f5f5;
+  --message-user-bg: #10a37f;
+  --message-assistant-bg: #f7f7f8;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #343541;
+  --bg-secondary: #444654;
+  --bg-tertiary: #40414f;
+  --text-primary: #ececf1;
+  --text-secondary: #c5c5d2;
+  --border-color: #565869;
+  --accent-color: #10a37f;
+  --hover-color: #2a2b32;
+  --message-user-bg: #10a37f;
+  --message-assistant-bg: #444654;
+}

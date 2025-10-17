@@ -1,0 +1,165 @@
+/* ============================================
+   Mobile Responsive Styles
+   ============================================ */
+
+@media (max-width: 768px) {
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+
+  /* Chat */
+  .main-chat {
+    width: 100%;
+  }
+
+  .mobile-header {
+    display: flex;
+  }
+
+  .message-content {
+    max-width: 85%;
+    font-size: 14px;
+  }
+
+  .message.user .message-content.collapsed,
+  .message.user .message-content.expanded {
+    max-width: 85%;
+    min-width: 150px;
+  }
+
+  .input-area {
+    padding: 16px;
+  }
+
+  .message-input {
+    padding: 12px 50px 12px 12px;
+    font-size: 16px;
+  }
+
+  .send-button {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .message-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .chat-messages {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .message-expand-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  /* Sidebar actions */
+  .chat-item {
+    padding: 10px 12px;
+  }
+
+  .chat-item-actions {
+    display: flex;
+    opacity: 0.7;
+  }
+
+  .chat-item.active .chat-item-actions {
+    opacity: 1;
+  }
+
+  .chat-action-btn {
+    padding: 8px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .chat-group-label {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    padding: 20px 16px;
+  }
+
+  .empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+
+  .empty-state-title {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .empty-state-description {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .suggestions-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .suggestion-card {
+    padding: 14px;
+  }
+
+  .suggestion-icon {
+    font-size: 18px;
+  }
+
+  .suggestion-text {
+    font-size: 13px;
+  }
+
+  /* Markdown */
+  .markdown-table {
+    font-size: 0.85em;
+  }
+
+  .markdown-th,
+  .markdown-td {
+    padding: 8px;
+    min-width: 80px;
+  }
+
+  .markdown-pre {
+    max-height: 300px;
+    font-size: 0.8em;
+  }
+
+  .markdown-code-block {
+    font-size: 0.75em;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-header {
+    display: none;
+  }
+}
