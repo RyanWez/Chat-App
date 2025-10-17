@@ -23,10 +23,14 @@ export const ChatMessages = ({ messages, isLoading, onSuggestionClick }: ChatMes
 
   return (
     <div className="chat-messages">
-      {messages.map(message => (
-        <ChatMessage key={message.id} message={message} />
+      {messages.map((message, index) => (
+        <ChatMessage 
+          key={message.id} 
+          message={message}
+          isStreaming={isLoading && index === messages.length - 1 && message.role === 'assistant'}
+        />
       ))}
-      {isLoading && (
+      {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
         <div className="message assistant">
           <div className="message-avatar">AI</div>
           <div className="message-content loading">

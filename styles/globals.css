@@ -227,8 +227,7 @@ body {
   font-size: 15px;
   resize: none;
   outline: none;
-  overflow: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
   transition: border-color 0.2s ease;
 }
 
@@ -507,6 +506,38 @@ body {
   transition: all 0.2s ease;
   font-family: inherit;
   line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme="dark"] .message-input {
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.message-input::-webkit-scrollbar {
+  width: 4px;
+}
+
+.message-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.message-input::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+[data-theme="dark"] .message-input::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.message-input::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .message-input::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .message-input:focus {
@@ -526,4 +557,185 @@ body {
   .suggestions-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Markdown Styles */
+.message-content {
+  line-height: 1.6;
+}
+
+/* Headings */
+.markdown-h1 {
+  font-size: 1.8em;
+  font-weight: 700;
+  margin: 0.8em 0 0.5em 0;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.markdown-h2 {
+  font-size: 1.5em;
+  font-weight: 700;
+  margin: 0.7em 0 0.4em 0;
+  color: var(--text-primary);
+}
+
+.markdown-h3 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em 0;
+  color: var(--text-primary);
+}
+
+.markdown-h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin: 0.5em 0 0.3em 0;
+  color: var(--text-primary);
+}
+
+/* Text formatting */
+.markdown-bold {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.markdown-italic {
+  font-style: italic;
+}
+
+/* Code */
+.markdown-inline-code {
+  background-color: var(--bg-tertiary);
+  color: var(--accent-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-pre {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.markdown-code-block {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Lists */
+.markdown-ul,
+.markdown-ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.markdown-li {
+  margin: 6px 0;
+  line-height: 1.6;
+}
+
+.markdown-ul .markdown-li {
+  list-style-type: disc;
+}
+
+.markdown-ol .markdown-li {
+  list-style-type: decimal;
+}
+
+/* Links */
+.markdown-link {
+  color: var(--accent-color);
+  text-decoration: underline;
+  transition: opacity 0.2s ease;
+}
+
+.markdown-link:hover {
+  opacity: 0.8;
+}
+
+/* Tables */
+.markdown-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 0.95em;
+}
+
+.markdown-thead {
+  background-color: var(--bg-tertiary);
+}
+
+.markdown-th,
+.markdown-td {
+  border: 1px solid var(--border-color);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.markdown-th {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.markdown-tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+/* Blockquote */
+.markdown-blockquote {
+  border-left: 4px solid var(--accent-color);
+  padding-left: 16px;
+  margin: 16px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Paragraphs */
+.markdown-p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* Streaming animation */
+.message.streaming .message-content {
+  position: relative;
+}
+
+.message.streaming .message-content::after {
+  content: '▊';
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Dark mode adjustments for markdown */
+[data-theme="dark"] .markdown-inline-code {
+  background-color: var(--bg-tertiary);
+  color: #7dd3fc;
+}
+
+[data-theme="dark"] .markdown-pre {
+  background-color: #2d2d2d;
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .markdown-link {
+  color: #7dd3fc;
 }

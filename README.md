@@ -1,17 +1,21 @@
 # Modern Chat Application
 
-A fully functional chat application built with Next.js, React, and TypeScript, featuring multiple chat sessions, real-time messaging, and a modern responsive design.
+A fully functional AI-powered chat application built with Next.js, React, and TypeScript, featuring Ollama Cloud integration, multiple chat sessions, and a modern responsive design.
 
 ## Features
 
+- 🤖 **AI-Powered Chat**: Real-time conversations with Ollama Cloud AI models
 - 💬 **Multiple Chat Sessions**: Create and manage multiple independent chat conversations
-- 🎨 **Clean, Modern UI**: Minimalist design inspired by popular chat interfaces
+- 🎨 **Clean, Modern UI**: Minimalist design with smooth animations
 - 🌓 **Dark/Light Theme**: Toggle between dark and light modes with smooth transitions
 - 📱 **Fully Responsive**: Optimized for both desktop and mobile devices
-- ⚡ **Real-time Messaging**: Send messages and receive simulated responses instantly
+- ⚡ **Real-time Messaging**: Send messages and receive AI responses instantly
 - 🎯 **TypeScript Support**: Fully typed codebase for better development experience
 - 📋 **Chat History**: Persistent chat sessions with timestamps and message history
 - 🔄 **Auto-scroll**: Messages automatically scroll as new content is added
+- ✨ **Empty State**: Welcome screen with suggested prompts
+- 💫 **Loading Animations**: Smooth message animations and typing indicators
+- 📝 **Auto-resize Input**: Smart textarea that grows with content
 
 ## Getting Started
 
@@ -21,36 +25,51 @@ A fully functional chat application built with Next.js, React, and TypeScript, f
 npm install
 ```
 
-2. Run the development server:
+2. Create a `.env.local` file in the root directory:
+
+```bash
+OLLAMA_API_KEY=your_ollama_api_key_here
+```
+
+Get your free API key from [Ollama Cloud](https://ollama.com/cloud)
+
+3. Run the development server:
 
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:9002](http://localhost:9002) in your browser.
+4. Open [http://localhost:9002](http://localhost:9002) in your browser.
 
 ## Project Structure
 
 ```
 ├── pages/
-│   ├── _app.tsx              # App wrapper with global providers
-│   └── index.tsx             # Main chat interface component
+│   ├── api/
+│   │   └── chat.ts          # API endpoint for Ollama integration
+│   ├── _app.tsx             # App wrapper with global providers
+│   └── index.tsx            # Main chat interface component
 ├── src/
-│   ├── components/           # Reusable UI components
-│   │   ├── ChatMessage.tsx   # Individual message component
-│   │   ├── ChatMessages.tsx  # Message list container
-│   │   ├── MessageInput.tsx  # Message input with send functionality
-│   │   ├── MobileHeader.tsx  # Mobile navigation header
-│   │   └── Sidebar.tsx       # Chat history sidebar
+│   ├── components/          # Reusable UI components
+│   │   ├── ChatMessage.tsx  # Individual message component
+│   │   ├── ChatMessages.tsx # Message list container
+│   │   ├── EmptyState.tsx   # Welcome screen with suggestions
+│   │   ├── LoadingDots.tsx  # Typing indicator animation
+│   │   ├── MessageInput.tsx # Auto-resize message input
+│   │   ├── MobileHeader.tsx # Mobile navigation header
+│   │   └── Sidebar.tsx      # Chat history sidebar
 │   ├── hooks/               # Custom React hooks
-│   │   ├── useChat.ts       # Chat state management
+│   │   ├── useChat.ts       # Chat state management with API
 │   │   └── useTheme.ts      # Theme state management
+│   ├── services/            # External service integrations
+│   │   └── ollama.ts        # Ollama Cloud API service
 │   ├── types/               # TypeScript type definitions
 │   │   └── chat.ts          # Chat-related interfaces
 │   └── utils/               # Utility functions
 │       └── formatters.ts    # Message formatting utilities
 ├── styles/
 │   └── globals.css          # Global styles with CSS variables
+├── .env.local               # Environment variables (API keys)
 ├── package.json
 ├── tsconfig.json
 └── next.config.js
@@ -140,27 +159,56 @@ Easily customize the appearance by modifying CSS variables in `styles/globals.cs
 - **State Management**: React Hooks
 - **Development**: ESLint for code quality
 
+## AI Integration
+
+This application uses **Ollama Cloud** for AI-powered conversations:
+
+- **Model**: deepseek-v3.1:671b-cloud
+- **Library**: Official Ollama JavaScript SDK
+- **Features**: Real-time chat completions
+- **Streaming**: Support for streaming responses (ready to implement)
+
+### Ollama Service
+
+The `OllamaService` class uses the official Ollama JavaScript library:
+
+```typescript
+// Simple chat completion
+await ollama.chat(messages)
+
+// Streaming chat (for real-time responses)
+await ollama.streamChat(messages, onChunk, onComplete, onError)
+```
+
+**Current Model**: `deepseek-v3.1:671b-cloud`
+
 ## Current Status
 
 ✅ **Fully Functional Features:**
 
 - Multiple chat sessions
-- Real-time messaging with simulated responses
+- Real-time AI-powered conversations
+- Ollama Cloud integration
 - Dark/light theme toggle
 - Mobile responsive design
 - TypeScript support
+- Empty state with suggestions
+- Loading animations
+- Auto-resize textarea
+- Error handling
 
 🚧 **Ready for Enhancement:**
 
-- Backend API integration
+- Streaming responses (real-time typing)
 - User authentication system
 - Message persistence (database storage)
-- Real AI model integration
+- Multiple AI model selection
 - File upload support
 - Rich media messaging (images, links)
 - Message search functionality
 - Export chat history
 - Push notifications
+- Chat title auto-generation
 
 ## Contributing
 
