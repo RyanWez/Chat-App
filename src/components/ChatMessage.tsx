@@ -15,10 +15,15 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
   const isLongMessage = message.role === 'user' && message.content.length > 200
   const shouldCollapse = isLongMessage && !isExpanded
   
+  // Clean up HTML br tags and convert to markdown line breaks
+  const cleanContent = message.content
+    .replace(/<br\s*\/?>/gi, '\n')  // Convert <br> to newline
+    .replace(/<br\s*\/?\s*>/gi, '\n')  // Convert <br /> to newline
+  
   // Get preview text (first 150 characters)
   const previewText = shouldCollapse 
-    ? message.content.slice(0, 150) + '...'
-    : message.content
+    ? cleanContent.slice(0, 150) + '...'
+    : cleanContent
 
   return (
     <div className={`message ${message.role} ${isStreaming ? 'streaming' : ''}`}>
