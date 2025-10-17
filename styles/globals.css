@@ -332,6 +332,76 @@ body {
 .message.user .message-content {
   background-color: var(--message-user-bg);
   color: white;
+  position: relative;
+}
+
+/* Message Expand Button */
+.message-expand-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  z-index: 1;
+}
+
+.message-expand-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+
+.message-expand-btn:active {
+  transform: scale(0.9);
+}
+
+.message-expand-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.message-expand-btn.expanded svg {
+  transform: rotate(180deg);
+}
+
+.message.user .message-content {
+  padding-right: 48px;
+}
+
+/* Fixed width for collapsed messages */
+.message.user .message-content.collapsed {
+  width: fit-content;
+  max-width: 70%;
+  min-width: 200px;
+}
+
+.message.user .message-content.expanded {
+  width: fit-content;
+  max-width: 70%;
+  min-width: 200px;
+}
+
+@media (max-width: 768px) {
+  .message-expand-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  .message.user .message-content.collapsed,
+  .message.user .message-content.expanded {
+    max-width: 85%;
+    min-width: 150px;
+  }
 }
 
 /* Input Area */
@@ -745,7 +815,7 @@ body {
   min-width: 0;
 }
 
-.message-content > * {
+.message-content>* {
   max-width: 100%;
   overflow-wrap: break-word;
 }

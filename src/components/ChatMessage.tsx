@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Message } from '@/types/chat'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -8,12 +9,41 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  // Check if message is long (more than 200 characters or 3 lines)
+  const isLongMessage = message.role === 'user' && message.content.length > 200
+  const shouldCollapse = isLongMessage && !isExpanded
+  
+  // Get preview text (first 150 characters)
+  const previewText = shouldCollapse 
+    ? message.content.slice(0, 150) + '...'
+    : message.content
+
   return (
     <div className={`message ${message.role} ${isStreaming ? 'streaming' : ''}`}>
       {message.role === 'assistant' && (
         <div className="message-avatar">AI</div>
       )}
-      <div className="message-content">
+      <div className={`message-content ${shouldCollapse ? 'collapsed' : 'expanded'}`}>
+        {message.role === 'user' && isLongMessage && (
+          <button
+            className={`message-expand-btn ${isExpanded ? 'expanded' : ''}`}
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <svg 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.5" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        )}
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -88,7 +118,7 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             br: () => <br />
           }}
         >
-          {message.content}
+          {previewText}
         </ReactMarkdown>
       </div>
       {message.role === 'user' && (
