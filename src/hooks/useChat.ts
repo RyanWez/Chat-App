@@ -100,10 +100,12 @@ export const useChat = () => {
         })
       );
 
-      // Read stream
+      // Read stream with throttling for better readability
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedContent = "";
+      let lastUpdateTime = Date.now();
+      const MIN_UPDATE_INTERVAL = 30; // ms between updates (adjust this!)
 
       while (true) {
         const { done, value } = await reader.read();
@@ -123,7 +125,59 @@ export const useChat = () => {
               if (parsed.type === "chunk" && parsed.content) {
                 accumulatedContent += parsed.content;
 
-                // Update message content
+                // Throttle updates for smoother animation
+                const now = Date.now();
+                const timeSinceLastUpdate = now - lastUpdateTime;
+
+                if (timeSinceLastUpdate >= MIN_UPDATE_INTERVAL) {
+                  lastUpdateTime = now;
+
+                  // Update message content
+                  setChatSessions((prev) =>
+                    prev.map((session) => {
+                      if (session.id === activeChatId) {
+                        return {
+                          ...session,
+                          messages: session.messages.map((msg) =>
+                            msg.id === assistantMessageId
+                              ? { ...msg, content: accumulatedContent }
+                              : msg
+                          ),
+                          lastUpdated: new Date(),
+                        };
+                      }
+                      return session;
+                    })
+                  );
+                } else {
+                  // Wait a bit before next update
+                  await new Promise((resolve) =>
+                    setTimeout(
+                      resolve,
+                      MIN_UPDATE_INTERVAL - timeSinceLastUpdate
+                    )
+                  );
+                  lastUpdateTime = Date.now();
+
+                  setChatSessions((prev) =>
+                    prev.map((session) => {
+                      if (session.id === activeChatId) {
+                        return {
+                          ...session,
+                          messages: session.messages.map((msg) =>
+                            msg.id === assistantMessageId
+                              ? { ...msg, content: accumulatedContent }
+                              : msg
+                          ),
+                          lastUpdated: new Date(),
+                        };
+                      }
+                      return session;
+                    })
+                  );
+                }
+              } else if (parsed.type === "done") {
+                // Final update with all content
                 setChatSessions((prev) =>
                   prev.map((session) => {
                     if (session.id === activeChatId) {
@@ -140,7 +194,6 @@ export const useChat = () => {
                     return session;
                   })
                 );
-              } else if (parsed.type === "done") {
                 setStreamingMessageId(null);
                 break;
               } else if (parsed.type === "error") {
