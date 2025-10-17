@@ -28,12 +28,17 @@ export const useChat = () => {
       timestamp: new Date(),
     };
 
-    // Add user message
+    // Add user message and update title if first message
     const updatedSessions = chatSessions.map((session) => {
       if (session.id === activeChatId) {
+        const isFirstMessage = session.messages.length === 0;
         return {
           ...session,
           messages: [...session.messages, newMessage],
+          title: isFirstMessage
+            ? content.trim().slice(0, 40) +
+              (content.length > 40 ? "..." : "")
+            : session.title,
           lastUpdated: new Date(),
         };
       }
@@ -158,13 +163,38 @@ export const useChat = () => {
   const createNewChat = () => {
     const newChat: ChatSession = {
       id: Date.now().toString(),
-      title: `Chat ${chatSessions.length + 1}`,
+      title: "New Chat",
       messages: [],
       lastUpdated: new Date(),
     };
 
     setChatSessions((prev) => [newChat, ...prev]);
     setActiveChatId(newChat.id);
+  };
+
+  const deleteChat = (chatId: string) => {
+    // Don't delete if it's the only chat
+    if (chatSessions.length === 1) {
+      return;
+    }
+
+    setChatSessions((prev) => prev.filter((session) => session.id !== chatId));
+
+    // If deleting active chat, switch to another
+    if (chatId === activeChatId) {
+      const remainingChats = chatSessions.filter((s) => s.id !== chatId);
+      if (remainingChats.length > 0) {
+        setActiveChatId(remainingChats[0].id);
+      }
+    }
+  };
+
+  const updateChatTitle = (chatId: string, newTitle: string) => {
+    setChatSessions((prev) =>
+      prev.map((session) =>
+        session.id === chatId ? { ...session, title: newTitle } : session
+      )
+    );
   };
 
   return {
@@ -176,5 +206,7 @@ export const useChat = () => {
     setActiveChatId,
     sendMessage,
     createNewChat,
+    deleteChat,
+    updateChatTitle,
   };
 };

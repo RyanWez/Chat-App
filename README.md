@@ -186,20 +186,30 @@ await ollama.streamChat(messages, onChunk, onComplete, onError)
 
 ✅ **Fully Functional Features:**
 
-- Multiple chat sessions
-- Real-time AI-powered conversations
+- Multiple chat sessions with smart organization
+- Real-time AI-powered conversations (DeepSeek model)
 - Ollama Cloud integration
 - Dark/light theme toggle
-- Mobile responsive design
+- Fully responsive mobile design
 - TypeScript support
 - Empty state with suggestions
-- Loading animations
+- Typing animations with markdown support
 - Auto-resize textarea
 - Error handling
+- **Sidebar Features:**
+  - Timestamp grouping (Today, Yesterday, Last 7 days, etc.)
+  - Delete chat functionality
+  - Edit chat titles
+  - Auto-generated chat titles from first message
+- **Markdown Support:**
+  - Bold, italic, code blocks
+  - Tables, lists, links
+  - Headings, blockquotes
+  - Syntax highlighting
 
 🚧 **Ready for Enhancement:**
 
-- Streaming responses (real-time typing)
+- Real streaming responses (SSE)
 - User authentication system
 - Message persistence (database storage)
 - Multiple AI model selection
@@ -208,7 +218,7 @@ await ollama.streamChat(messages, onChunk, onComplete, onError)
 - Message search functionality
 - Export chat history
 - Push notifications
-- Chat title auto-generation
+- Voice input/output
 
 ## Contributing
 
