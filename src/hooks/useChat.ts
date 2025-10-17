@@ -127,10 +127,12 @@ export const useChat = ({ userId }: UseChatProps) => {
       timestamp: new Date(),
     };
 
+    // Check if this is the first message BEFORE adding it
+    const isFirstMessage = activeChat.messages.length === 0;
+    
     // Add user message and update title if first message
     const updatedSessions = chatSessions.map((session) => {
       if (session.id === activeChatId) {
-        const isFirstMessage = session.messages.length === 0;
         return {
           ...session,
           messages: [...session.messages, newMessage],
