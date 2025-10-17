@@ -5,7 +5,7 @@ export const useChat = () => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([
     {
       id: "1",
-      title: "Welcome Chat",
+      title: "New Chat",
       messages: [],
       lastUpdated: new Date(),
     },
@@ -36,8 +36,7 @@ export const useChat = () => {
           ...session,
           messages: [...session.messages, newMessage],
           title: isFirstMessage
-            ? content.trim().slice(0, 40) +
-              (content.length > 40 ? "..." : "")
+            ? content.trim().slice(0, 40) + (content.length > 40 ? "..." : "")
             : session.title,
           lastUpdated: new Date(),
         };
@@ -60,8 +59,8 @@ export const useChat = () => {
             content: m.content,
           })) || [];
 
-      // Use regular API (not streaming)
-      const response = await fetch("/api/chat", {
+      // Try streaming first
+      const response = await fetch("/api/chat-stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,13 +69,17 @@ export const useChat = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get response from AI");
+        throw new Error("Streaming failed");
       }
 
-      const data = await response.json();
-      setIsLoading(false);
+      if (!response.body) {
+        throw new Error("No response body");
+      }
 
-      // Add empty message first
+      // Hide loading, show empty message
+      setIsLoading(false);
+      setStreamingMessageId(assistantMessageId);
+
       const emptyMessage: Message = {
         id: assistantMessageId,
         content: "",
@@ -97,30 +100,103 @@ export const useChat = () => {
         })
       );
 
-      setStreamingMessageId(assistantMessageId);
+      // Read stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = "";
 
-      // Simulate typing effect
-      const fullText = data.content;
-      const chunkSize = 5; // characters per update
-      let currentIndex = 0;
+      while (true) {
+        const { done, value } = await reader.read();
 
-      const typeInterval = setInterval(() => {
-        currentIndex += chunkSize;
-        const currentText = fullText.slice(
-          0,
-          Math.min(currentIndex, fullText.length)
-        );
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === "chunk" && parsed.content) {
+                accumulatedContent += parsed.content;
+
+                // Update message content
+                setChatSessions((prev) =>
+                  prev.map((session) => {
+                    if (session.id === activeChatId) {
+                      return {
+                        ...session,
+                        messages: session.messages.map((msg) =>
+                          msg.id === assistantMessageId
+                            ? { ...msg, content: accumulatedContent }
+                            : msg
+                        ),
+                        lastUpdated: new Date(),
+                      };
+                    }
+                    return session;
+                  })
+                );
+              } else if (parsed.type === "done") {
+                setStreamingMessageId(null);
+                break;
+              } else if (parsed.type === "error") {
+                throw new Error(parsed.error || "Streaming error");
+              }
+            } catch (e) {
+              console.error("Error parsing SSE data:", e);
+            }
+          }
+        }
+      }
+
+      setStreamingMessageId(null);
+    } catch (error) {
+      console.error("Streaming error, falling back to regular API:", error);
+      setIsLoading(false);
+      setStreamingMessageId(null);
+
+      // Fallback to regular API
+      try {
+        const apiMessages =
+          updatedSessions
+            .find((s) => s.id === activeChatId)
+            ?.messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            })) || [];
+
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages: apiMessages }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to get response from AI");
+        }
+
+        const data = await response.json();
+
+        // Add message with typing animation
+        const emptyMessage: Message = {
+          id: assistantMessageId,
+          content: "",
+          role: "assistant",
+          timestamp: new Date(),
+        };
 
         setChatSessions((prev) =>
           prev.map((session) => {
             if (session.id === activeChatId) {
               return {
                 ...session,
-                messages: session.messages.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? { ...msg, content: currentText }
-                    : msg
-                ),
+                messages: [...session.messages, emptyMessage],
                 lastUpdated: new Date(),
               };
             }
@@ -128,35 +204,66 @@ export const useChat = () => {
           })
         );
 
-        if (currentIndex >= fullText.length) {
-          clearInterval(typeInterval);
-          setStreamingMessageId(null);
-        }
-      }, 20); // 20ms per chunk = smooth animation
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setIsLoading(false);
+        setStreamingMessageId(assistantMessageId);
 
-      // Show error message
-      const errorMessage: Message = {
-        id: assistantMessageId,
-        content: "Sorry, I encountered an error. Please try again.",
-        role: "assistant",
-        timestamp: new Date(),
-      };
+        // Simulate typing effect
+        const fullText = data.content;
+        const chunkSize = 5;
+        let currentIndex = 0;
 
-      setChatSessions((prev) =>
-        prev.map((session) => {
-          if (session.id === activeChatId) {
-            return {
-              ...session,
-              messages: [...session.messages, errorMessage],
-              lastUpdated: new Date(),
-            };
+        const typeInterval = setInterval(() => {
+          currentIndex += chunkSize;
+          const currentText = fullText.slice(
+            0,
+            Math.min(currentIndex, fullText.length)
+          );
+
+          setChatSessions((prev) =>
+            prev.map((session) => {
+              if (session.id === activeChatId) {
+                return {
+                  ...session,
+                  messages: session.messages.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: currentText }
+                      : msg
+                  ),
+                  lastUpdated: new Date(),
+                };
+              }
+              return session;
+            })
+          );
+
+          if (currentIndex >= fullText.length) {
+            clearInterval(typeInterval);
+            setStreamingMessageId(null);
           }
-          return session;
-        })
-      );
+        }, 20);
+      } catch (fallbackError) {
+        console.error("Fallback error:", fallbackError);
+
+        // Show error message
+        const errorMessage: Message = {
+          id: assistantMessageId,
+          content: "Sorry, I encountered an error. Please try again.",
+          role: "assistant",
+          timestamp: new Date(),
+        };
+
+        setChatSessions((prev) =>
+          prev.map((session) => {
+            if (session.id === activeChatId) {
+              return {
+                ...session,
+                messages: [...session.messages, errorMessage],
+                lastUpdated: new Date(),
+              };
+            }
+            return session;
+          })
+        );
+      }
     }
   };
 
@@ -173,14 +280,12 @@ export const useChat = () => {
   };
 
   const deleteChat = (chatId: string) => {
-    // Don't delete if it's the only chat
     if (chatSessions.length === 1) {
       return;
     }
 
     setChatSessions((prev) => prev.filter((session) => session.id !== chatId));
 
-    // If deleting active chat, switch to another
     if (chatId === activeChatId) {
       const remainingChats = chatSessions.filter((s) => s.id !== chatId);
       if (remainingChats.length > 0) {
