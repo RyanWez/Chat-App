@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { Message } from "@/types/chat";
 import { ChatMessage } from "./ChatMessage";
 import { ThinkingIndicator } from "./ThinkingIndicator";
@@ -18,15 +18,21 @@ export const ChatMessages = ({
   onSuggestionClick,
 }: ChatMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isScrolling, setIsScrolling] = useState(false);
+  const isScrollingRef = useRef(false);
+
+  const scrollToBottom = useCallback(() => {
+    if (!isScrollingRef.current) {
+      isScrollingRef.current = true;
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 500);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!isScrolling) {
-      setIsScrolling(true);
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      setTimeout(() => setIsScrolling(false), 500);
-    }
-  }, [messages, isLoading, streamingMessageId]);
+    scrollToBottom();
+  }, [messages, isLoading, streamingMessageId, scrollToBottom]);
 
   if (messages.length === 0 && !isLoading) {
     return <EmptyState onSuggestionClick={onSuggestionClick || (() => {})} />;

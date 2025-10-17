@@ -20,7 +20,7 @@ export default async function handler(
     const usersCollection = db.collection('users')
 
     // Check if device already exists
-    let user = await usersCollection.findOne({ deviceId })
+    const user = await usersCollection.findOne({ deviceId })
 
     if (user) {
       // Update last seen
