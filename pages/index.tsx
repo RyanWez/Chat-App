@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Head from "next/head";
+import { useAuth } from "@/hooks/useAuth";
 import { useChat } from "@/hooks/useChat";
 import { useTheme } from "@/hooks/useTheme";
 import { Sidebar } from "@/components/Sidebar";
@@ -10,6 +11,11 @@ import { MessageInput } from "@/components/MessageInput";
 export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
+  
+  // Initialize authentication
+  const { userId, isLoading: isAuthLoading, error: authError } = useAuth();
+  
+  // Initialize chat with userId
   const {
     chatSessions,
     activeChatId,
@@ -22,24 +28,63 @@ export default function Home() {
     createNewChat,
     deleteChat,
     updateChatTitle,
-  } = useChat();
+  } = useChat({ userId });
 
   const handleNewChat = () => {
     createNewChat();
     setIsSidebarOpen(false);
   };
 
-  if (isInitializing) {
+  // Show loading state while authenticating
+  if (isAuthLoading || isInitializing) {
     return (
       <div style={{ 
         display: 'flex', 
+        flexDirection: 'column',
         alignItems: 'center', 
         justifyContent: 'center', 
         height: '100vh',
         fontSize: '18px',
-        color: '#565869'
+        color: '#565869',
+        gap: '10px'
       }}>
-        Loading chats...
+        <div>🔐 Initializing your session...</div>
+        {isAuthLoading && <div style={{ fontSize: '14px', opacity: 0.7 }}>Authenticating device...</div>}
+        {isInitializing && <div style={{ fontSize: '14px', opacity: 0.7 }}>Loading chats...</div>}
+      </div>
+    );
+  }
+
+  // Show error state if authentication failed
+  if (authError) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#ef4444',
+        gap: '10px'
+      }}>
+        <div>❌ Authentication Error</div>
+        <div style={{ fontSize: '14px', opacity: 0.7 }}>{authError}</div>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            background: '#10a37f',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          Retry
+        </button>
       </div>
     );
   }

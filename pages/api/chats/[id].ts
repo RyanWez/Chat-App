@@ -21,9 +21,23 @@ export default async function handler(
     const db = await getDatabase()
     const chatsCollection = db.collection('chats')
 
+    // Get userId from header
+    const userId = req.headers['x-user-id'] as string
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID required' })
+    }
+
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' })
+    }
+
     if (req.method === 'GET') {
-      // Get single chat
-      const chat = await chatsCollection.findOne({ _id: new ObjectId(id) })
+      // Get single chat (verify ownership)
+      const chat = await chatsCollection.findOne({ 
+        _id: new ObjectId(id),
+        userId: new ObjectId(userId)
+      })
 
       if (!chat) {
         return res.status(404).json({ error: 'Chat not found' })
@@ -33,7 +47,7 @@ export default async function handler(
     }
 
     if (req.method === 'PUT') {
-      // Update chat
+      // Update chat (verify ownership)
       const { title, messages } = req.body
 
       // Validate input
@@ -65,7 +79,10 @@ export default async function handler(
       if (messages !== undefined) updateData.messages = messages
 
       const result = await chatsCollection.findOneAndUpdate(
-        { _id: new ObjectId(id) },
+        { 
+          _id: new ObjectId(id),
+          userId: new ObjectId(userId)
+        },
         { $set: updateData },
         { returnDocument: 'after' }
       )
@@ -78,8 +95,11 @@ export default async function handler(
     }
 
     if (req.method === 'DELETE') {
-      // Delete chat
-      const result = await chatsCollection.deleteOne({ _id: new ObjectId(id) })
+      // Delete chat (verify ownership)
+      const result = await chatsCollection.deleteOne({ 
+        _id: new ObjectId(id),
+        userId: new ObjectId(userId)
+      })
 
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: 'Chat not found' })

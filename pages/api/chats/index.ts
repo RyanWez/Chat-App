@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getDatabase } from '@/lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,10 +10,22 @@ export default async function handler(
     const db = await getDatabase()
     const chatsCollection = db.collection('chats')
 
+    // Get userId from header or body
+    const userId = req.headers['x-user-id'] as string || req.body?.userId
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID required' })
+    }
+
+    // Validate userId format
+    if (!ObjectId.isValid(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID format' })
+    }
+
     if (req.method === 'GET') {
-      // Get all chats
+      // Get all chats for this user
       const chats = await chatsCollection
-        .find({})
+        .find({ userId: new ObjectId(userId) })
         .sort({ lastUpdated: -1 })
         .toArray()
 
@@ -20,7 +33,7 @@ export default async function handler(
     }
 
     if (req.method === 'POST') {
-      // Create new chat
+      // Create new chat for this user
       const { title, messages } = req.body
 
       // Validate input
@@ -45,6 +58,7 @@ export default async function handler(
       }
 
       const newChat = {
+        userId: new ObjectId(userId),
         title: title || 'New Chat',
         messages: messages || [],
         lastUpdated: new Date(),

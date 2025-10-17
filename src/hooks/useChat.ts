@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { ChatSession, Message } from "@/types/chat";
 
-export const useChat = () => {
+interface UseChatProps {
+  userId: string | null;
+}
+
+export const useChat = ({ userId }: UseChatProps) => {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -12,9 +16,18 @@ export const useChat = () => {
 
   // Load chats from database on mount
   useEffect(() => {
+    if (!userId) {
+      setIsInitializing(false);
+      return;
+    }
+
     const initChats = async () => {
       try {
-        const response = await fetch("/api/chats");
+        const response = await fetch("/api/chats", {
+          headers: {
+            'x-user-id': userId
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to load chats: ${response.status}`);
@@ -42,8 +55,6 @@ export const useChat = () => {
         }
       } catch (error) {
         console.error("Error loading chats:", error);
-        // Show user-friendly error
-        alert("Failed to load chat history. Starting with a new chat.");
         // Fallback: create new chat
         await createNewChat();
       } finally {
@@ -53,15 +64,20 @@ export const useChat = () => {
     
     initChats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId]);
 
   const saveChat = async (chat: ChatSession) => {
+    if (!userId) return;
+
     try {
       if (chat._id) {
         // Update existing chat
         const response = await fetch(`/api/chats/${chat._id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-user-id": userId
+          },
           body: JSON.stringify({
             title: chat.title,
             messages: chat.messages
@@ -75,10 +91,14 @@ export const useChat = () => {
         // Create new chat
         const response = await fetch("/api/chats", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-user-id": userId
+          },
           body: JSON.stringify({
             title: chat.title,
-            messages: chat.messages
+            messages: chat.messages,
+            userId: userId
           })
         });
         
@@ -94,13 +114,11 @@ export const useChat = () => {
       }
     } catch (error) {
       console.error("Error saving chat:", error);
-      // Show user notification
-      alert("Failed to save chat. Your messages may not be persisted.");
     }
   };
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !activeChat || isLoading) return;
+    if (!content.trim() || !activeChat || isLoading || !userId) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -390,14 +408,10 @@ export const useChat = () => {
         }, 20);
       } catch (fallbackError) {
         console.error("Fallback error:", fallbackError);
-        
-        const errorMsg = fallbackError instanceof Error 
-          ? fallbackError.message 
-          : "Unknown error occurred";
 
         const errorMessage: Message = {
           id: assistantMessageId,
-          content: `Sorry, I encountered an error: ${errorMsg}. Please check your connection and try again.`,
+          content: "Sorry, I encountered an error. Please try again.",
           role: "assistant",
           timestamp: new Date(),
         };
@@ -414,14 +428,13 @@ export const useChat = () => {
             return session;
           })
         );
-        
-        // Show user notification
-        alert(`AI Error: ${errorMsg}`);
       }
     }
   };
 
   const createNewChat = async () => {
+    if (!userId) return;
+
     const tempId = Date.now().toString();
     const newChat: ChatSession = {
       id: tempId,
@@ -438,8 +451,14 @@ export const useChat = () => {
     try {
       const response = await fetch("/api/chats", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newChat)
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": userId
+        },
+        body: JSON.stringify({
+          ...newChat,
+          userId: userId
+        })
       });
 
       if (response.ok) {
@@ -455,7 +474,7 @@ export const useChat = () => {
   };
 
   const deleteChat = async (chatId: string) => {
-    if (chatSessions.length === 1) {
+    if (chatSessions.length === 1 || !userId) {
       return;
     }
 
@@ -464,17 +483,14 @@ export const useChat = () => {
     // Delete from database
     if (chatToDelete?._id) {
       try {
-        const response = await fetch(`/api/chats/${chatToDelete._id}`, {
-          method: "DELETE"
+        await fetch(`/api/chats/${chatToDelete._id}`, {
+          method: "DELETE",
+          headers: {
+            "x-user-id": userId
+          }
         });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to delete chat: ${response.status}`);
-        }
       } catch (error) {
         console.error("Error deleting chat:", error);
-        alert("Failed to delete chat from database.");
-        return; // Don't delete from UI if DB delete failed
       }
     }
 
