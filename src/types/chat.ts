@@ -6,8 +6,10 @@ export interface Message {
 }
 
 export interface ChatSession {
+  _id?: string
   id: string
   title: string
   messages: Message[]
   lastUpdated: Date
+  createdAt?: Date
 }

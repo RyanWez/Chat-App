@@ -16,6 +16,7 @@ export default function Home() {
     activeChat,
     isLoading,
     streamingMessageId,
+    isInitializing,
     setActiveChatId,
     sendMessage,
     createNewChat,
@@ -27,6 +28,21 @@ export default function Home() {
     createNewChat();
     setIsSidebarOpen(false);
   };
+
+  if (isInitializing) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#565869'
+      }}>
+        Loading chats...
+      </div>
+    );
+  }
 
   return (
     <>

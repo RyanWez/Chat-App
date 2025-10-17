@@ -1,22 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatSession, Message } from "@/types/chat";
 
 export const useChat = () => {
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([
-    {
-      id: "1",
-      title: "New Chat",
-      messages: [],
-      lastUpdated: new Date(),
-    },
-  ]);
-  const [activeChatId, setActiveChatId] = useState("1");
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
-    null
-  );
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const activeChat = chatSessions.find((chat) => chat.id === activeChatId);
+
+  // Load chats from database on mount
+  useEffect(() => {
+    const initChats = async () => {
+      try {
+        const response = await fetch("/api/chats");
+        if (response.ok) {
+          const chats = await response.json();
+          
+          if (chats.length > 0) {
+            // Convert MongoDB _id to id
+            const formattedChats = chats.map((chat: { _id: string; lastUpdated: string; messages: Array<{ timestamp: string }> }) => ({
+              ...chat,
+              id: chat._id,
+              lastUpdated: new Date(chat.lastUpdated),
+              messages: chat.messages.map((msg) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              }))
+            }));
+            
+            setChatSessions(formattedChats);
+            setActiveChatId(formattedChats[0].id);
+          } else {
+            // Create initial chat if none exist
+            await createNewChat();
+          }
+        }
+      } catch (error) {
+        console.error("Error loading chats:", error);
+        // Fallback: create new chat
+        await createNewChat();
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+    
+    initChats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const saveChat = async (chat: ChatSession) => {
+    try {
+      if (chat._id) {
+        // Update existing chat
+        await fetch(`/api/chats/${chat._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: chat.title,
+            messages: chat.messages
+          })
+        });
+      } else {
+        // Create new chat
+        const response = await fetch("/api/chats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: chat.title,
+            messages: chat.messages
+          })
+        });
+        
+        if (response.ok) {
+          const savedChat = await response.json();
+          // Update local state with MongoDB _id
+          setChatSessions(prev => prev.map(s => 
+            s.id === chat.id ? { ...s, _id: savedChat._id } : s
+          ));
+        }
+      }
+    } catch (error) {
+      console.error("Error saving chat:", error);
+    }
+  };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || !activeChat || isLoading) return;
@@ -45,26 +113,27 @@ export const useChat = () => {
     });
 
     setChatSessions(updatedSessions);
-    setIsLoading(true);
+    
+    // Save to database
+    const updatedChat = updatedSessions.find(s => s.id === activeChatId);
+    if (updatedChat) {
+      await saveChat(updatedChat);
+    }
 
+    setIsLoading(true);
     const assistantMessageId = (Date.now() + 1).toString();
 
     try {
-      // Prepare messages for API
-      const apiMessages =
-        updatedSessions
-          .find((s) => s.id === activeChatId)
-          ?.messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })) || [];
+      const apiMessages = updatedSessions
+        .find((s) => s.id === activeChatId)
+        ?.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })) || [];
 
-      // Try streaming first
       const response = await fetch("/api/chat-stream", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: apiMessages }),
       });
 
@@ -76,7 +145,6 @@ export const useChat = () => {
         throw new Error("No response body");
       }
 
-      // Hide loading, show empty message
       setIsLoading(false);
       setStreamingMessageId(assistantMessageId);
 
@@ -100,16 +168,14 @@ export const useChat = () => {
         })
       );
 
-      // Read stream with throttling for better readability
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedContent = "";
       let lastUpdateTime = Date.now();
-      const MIN_UPDATE_INTERVAL = 30; // ms between updates (adjust this!)
+      const MIN_UPDATE_INTERVAL = 30;
 
       while (true) {
         const { done, value } = await reader.read();
-
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
@@ -125,14 +191,12 @@ export const useChat = () => {
               if (parsed.type === "chunk" && parsed.content) {
                 accumulatedContent += parsed.content;
 
-                // Throttle updates for smoother animation
                 const now = Date.now();
                 const timeSinceLastUpdate = now - lastUpdateTime;
 
                 if (timeSinceLastUpdate >= MIN_UPDATE_INTERVAL) {
                   lastUpdateTime = now;
 
-                  // Update message content
                   setChatSessions((prev) =>
                     prev.map((session) => {
                       if (session.id === activeChatId) {
@@ -150,12 +214,8 @@ export const useChat = () => {
                     })
                   );
                 } else {
-                  // Wait a bit before next update
                   await new Promise((resolve) =>
-                    setTimeout(
-                      resolve,
-                      MIN_UPDATE_INTERVAL - timeSinceLastUpdate
-                    )
+                    setTimeout(resolve, MIN_UPDATE_INTERVAL - timeSinceLastUpdate)
                   );
                   lastUpdateTime = Date.now();
 
@@ -177,7 +237,6 @@ export const useChat = () => {
                   );
                 }
               } else if (parsed.type === "done") {
-                // Final update with all content
                 setChatSessions((prev) =>
                   prev.map((session) => {
                     if (session.id === activeChatId) {
@@ -194,6 +253,22 @@ export const useChat = () => {
                     return session;
                   })
                 );
+                
+                // Save final message to database
+                const finalChat = chatSessions.find(s => s.id === activeChatId);
+                if (finalChat) {
+                  const updatedChat = {
+                    ...finalChat,
+                    messages: [...finalChat.messages, {
+                      id: assistantMessageId,
+                      content: accumulatedContent,
+                      role: "assistant" as const,
+                      timestamp: new Date()
+                    }]
+                  };
+                  await saveChat(updatedChat);
+                }
+                
                 setStreamingMessageId(null);
                 break;
               } else if (parsed.type === "error") {
@@ -212,21 +287,18 @@ export const useChat = () => {
       setIsLoading(false);
       setStreamingMessageId(null);
 
-      // Fallback to regular API
+      // Fallback logic...
       try {
-        const apiMessages =
-          updatedSessions
-            .find((s) => s.id === activeChatId)
-            ?.messages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })) || [];
+        const apiMessages = updatedSessions
+          .find((s) => s.id === activeChatId)
+          ?.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })) || [];
 
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: apiMessages }),
         });
 
@@ -236,7 +308,6 @@ export const useChat = () => {
 
         const data = await response.json();
 
-        // Add message with typing animation
         const emptyMessage: Message = {
           id: assistantMessageId,
           content: "",
@@ -259,17 +330,13 @@ export const useChat = () => {
 
         setStreamingMessageId(assistantMessageId);
 
-        // Simulate typing effect
         const fullText = data.content;
         const chunkSize = 5;
         let currentIndex = 0;
 
         const typeInterval = setInterval(() => {
           currentIndex += chunkSize;
-          const currentText = fullText.slice(
-            0,
-            Math.min(currentIndex, fullText.length)
-          );
+          const currentText = fullText.slice(0, Math.min(currentIndex, fullText.length));
 
           setChatSessions((prev) =>
             prev.map((session) => {
@@ -291,12 +358,26 @@ export const useChat = () => {
           if (currentIndex >= fullText.length) {
             clearInterval(typeInterval);
             setStreamingMessageId(null);
+            
+            // Save to database
+            const finalChat = chatSessions.find(s => s.id === activeChatId);
+            if (finalChat) {
+              const updatedChat = {
+                ...finalChat,
+                messages: [...finalChat.messages, {
+                  id: assistantMessageId,
+                  content: fullText,
+                  role: "assistant" as const,
+                  timestamp: new Date()
+                }]
+              };
+              saveChat(updatedChat);
+            }
           }
         }, 20);
       } catch (fallbackError) {
         console.error("Fallback error:", fallbackError);
 
-        // Show error message
         const errorMessage: Message = {
           id: assistantMessageId,
           content: "Sorry, I encountered an error. Please try again.",
@@ -320,21 +401,55 @@ export const useChat = () => {
     }
   };
 
-  const createNewChat = () => {
+  const createNewChat = async () => {
+    const tempId = Date.now().toString();
     const newChat: ChatSession = {
-      id: Date.now().toString(),
+      id: tempId,
       title: "New Chat",
       messages: [],
       lastUpdated: new Date(),
+      createdAt: new Date()
     };
 
     setChatSessions((prev) => [newChat, ...prev]);
-    setActiveChatId(newChat.id);
+    setActiveChatId(tempId);
+
+    // Save to database
+    try {
+      const response = await fetch("/api/chats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newChat)
+      });
+
+      if (response.ok) {
+        const savedChat = await response.json();
+        setChatSessions(prev => prev.map(chat => 
+          chat.id === tempId ? { ...chat, _id: savedChat._id, id: savedChat._id } : chat
+        ));
+        setActiveChatId(savedChat._id);
+      }
+    } catch (error) {
+      console.error("Error creating chat:", error);
+    }
   };
 
-  const deleteChat = (chatId: string) => {
+  const deleteChat = async (chatId: string) => {
     if (chatSessions.length === 1) {
       return;
+    }
+
+    const chatToDelete = chatSessions.find(s => s.id === chatId);
+    
+    // Delete from database
+    if (chatToDelete?._id) {
+      try {
+        await fetch(`/api/chats/${chatToDelete._id}`, {
+          method: "DELETE"
+        });
+      } catch (error) {
+        console.error("Error deleting chat:", error);
+      }
     }
 
     setChatSessions((prev) => prev.filter((session) => session.id !== chatId));
@@ -347,12 +462,18 @@ export const useChat = () => {
     }
   };
 
-  const updateChatTitle = (chatId: string, newTitle: string) => {
+  const updateChatTitle = async (chatId: string, newTitle: string) => {
     setChatSessions((prev) =>
       prev.map((session) =>
         session.id === chatId ? { ...session, title: newTitle } : session
       )
     );
+
+    // Save to database
+    const chat = chatSessions.find(s => s.id === chatId);
+    if (chat) {
+      await saveChat({ ...chat, title: newTitle });
+    }
   };
 
   return {
@@ -361,6 +482,7 @@ export const useChat = () => {
     activeChat,
     isLoading,
     streamingMessageId,
+    isInitializing,
     setActiveChatId,
     sendMessage,
     createNewChat,

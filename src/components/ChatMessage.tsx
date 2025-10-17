@@ -58,8 +58,7 @@ export const ChatMessage = ({ message, isStreaming }: ChatMessageProps) => {
             em: ({ children }) => <em className="markdown-italic">{children}</em>,
             
             // Code
-            code: ({ inline, children, className, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '')
+            code: ({ inline, children, className, ...props }: { inline?: boolean; children?: React.ReactNode; className?: string }) => {
               return inline ? (
                 <code className="markdown-inline-code" {...props}>
                   {children}
