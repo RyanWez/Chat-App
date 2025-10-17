@@ -201,7 +201,8 @@ export default function Home() {
                   <div className="message-avatar">AI</div>
                 )}
                 <div className="message-content">
-                  {message.content}
+                  <div className="message-text">{message.content}</div>
+                  <div className="message-time">{formatTime(message.timestamp)}</div>
                 </div>
                 {message.role === 'user' && (
                   <div className="message-avatar">You</div>
