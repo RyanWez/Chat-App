@@ -1,24 +1,25 @@
 interface EmptyStateProps {
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: string) => void;
 }
 
 export const EmptyState = ({ onSuggestionClick }: EmptyStateProps) => {
   const suggestions = [
-    "Explain quantum computing in simple terms",
-    "Write a creative story about a time traveler",
-    "Help me plan a healthy meal for the week",
-    "Teach me the basics of JavaScript"
-  ]
+    "အီလက်ထရွန်နစ် ကွန်ပျူတာ တွက်ချက်မှုကို ရိုးရိုးရှင်းရှင်း ရှင်းပြပေးပါ",
+    "အချိန်ခရီးသွားတစ်ယောက်အကြောင်း တီထွင်ဖန်တီးထားတဲ့ ပုံပြင်တစ်ပုဒ် ရေးပေးပါ",
+    "တစ်ပတ်အတွက် ကျန်းမာရေးနဲ့ ညီတဲ့ အစားအသောက် အစီအစဉ် ကူညီပြင်ဆင်ပေးပါ",
+    "JavaScript အခြေခံ အသိပညာတွေ သင်ပေးပါ",
+  ];
 
   return (
     <div className="empty-state">
       <div className="empty-state-content">
         <div className="empty-state-icon">💬</div>
-        <h2 className="empty-state-title">Start a Conversation</h2>
+        <h2 className="empty-state-title">စကားစမြည် ပြောကြမယ်</h2>
         <p className="empty-state-description">
-          Choose a suggestion below or type your own message
+          အောက်က အဆိုပြုချက်တွေ ရွေးချယ်ပါ ဒါမှမဟုတ် သင့်ရဲ့ မက်ဆေ့ချ်
+          ရိုက်ထည့်ပါ
         </p>
-        
+
         <div className="suggestions-grid">
           {suggestions.map((suggestion, index) => (
             <button
@@ -33,5 +34,5 @@ export const EmptyState = ({ onSuggestionClick }: EmptyStateProps) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
