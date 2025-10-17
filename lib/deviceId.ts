@@ -32,9 +32,6 @@ export function getDeviceId(): string {
       // Generate new device ID
       deviceId = generateUUID()
       localStorage.setItem(DEVICE_ID_KEY, deviceId)
-      console.log('🆕 New device ID generated:', deviceId)
-    } else {
-      console.log('✅ Existing device ID found:', deviceId)
     }
 
     return deviceId
@@ -51,7 +48,6 @@ export function getDeviceId(): string {
 export function clearDeviceId(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(DEVICE_ID_KEY)
-    console.log('🗑️ Device ID cleared')
   }
 }
 

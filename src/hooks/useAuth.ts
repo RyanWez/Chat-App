@@ -1,70 +1,68 @@
-import { useState, useEffect } from 'react'
-import { getDeviceId, getDeviceInfo } from '@/lib/deviceId'
+import { useState, useEffect } from "react";
+import { getDeviceId, getDeviceInfo } from "@/lib/deviceId";
 
 export interface User {
-  _id: string
-  deviceId: string
-  createdAt: Date
-  lastSeen: Date
+  _id: string;
+  deviceId: string;
+  createdAt: Date;
+  lastSeen: Date;
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    initializeAuth()
-  }, [])
+    initializeAuth();
+  }, []);
 
   const initializeAuth = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       // Get device ID from localStorage
-      const deviceId = getDeviceId()
+      const deviceId = getDeviceId();
 
       if (!deviceId) {
-        throw new Error('Failed to generate device ID')
+        throw new Error("Failed to generate device ID");
       }
 
       // Register or verify device with backend
-      const response = await fetch('/api/auth/device', {
-        method: 'POST',
+      const response = await fetch("/api/auth/device", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           deviceId,
           deviceInfo: getDeviceInfo(),
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to authenticate device')
+        throw new Error("Failed to authenticate device");
       }
 
-      const userData = await response.json()
-      
+      const userData = await response.json();
+
       setUser({
         ...userData,
         createdAt: new Date(userData.createdAt),
         lastSeen: new Date(userData.lastSeen),
-      })
-
-      console.log('✅ User authenticated:', userData._id)
+      });
     } catch (err) {
-      console.error('Authentication error:', err)
-      setError(err instanceof Error ? err.message : 'Authentication failed')
+      console.error("Authentication error:", err);
+      setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const refreshAuth = () => {
-    initializeAuth()
-  }
+    initializeAuth();
+  };
 
   return {
     user,
@@ -73,5 +71,5 @@ export const useAuth = () => {
     isLoading,
     error,
     refreshAuth,
-  }
-}
+  };
+};

@@ -34,8 +34,6 @@ export default async function handler(
         }
       )
 
-      console.log('✅ Existing user authenticated:', user._id)
-      
       return res.status(200).json({
         _id: user._id.toString(),
         deviceId: user.deviceId,
@@ -53,8 +51,6 @@ export default async function handler(
     }
 
     const result = await usersCollection.insertOne(newUser)
-
-    console.log('🆕 New user created:', result.insertedId)
 
     return res.status(201).json({
       _id: result.insertedId.toString(),
